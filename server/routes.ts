@@ -156,27 +156,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WooCommerce API test endpoint
+  app.post("/api/woocommerce/test", async (req, res) => {
+    try {
+      const { shopUrl, consumerKey, consumerSecret } = req.body;
+      
+      // Test WooCommerce API connection
+      const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
+      const testUrl = `${shopUrl}/wp-json/wc/v3/orders?per_page=1`;
+      
+      const response = await fetch(testUrl, {
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        res.json({ success: true, message: "WooCommerce API connection successful" });
+      } else {
+        res.status(400).json({ success: false, message: "Invalid API credentials or store URL" });
+      }
+    } catch (error) {
+      console.error("WooCommerce API test failed:", error);
+      res.status(500).json({ success: false, message: "Connection test failed" });
+    }
+  });
+
   // WooCommerce webhook endpoint
   app.post("/api/webhook/woocommerce", async (req, res) => {
     try {
       const webhookData = req.body;
       
+      console.log('Received WooCommerce webhook for order:', webhookData.id);
+      
       // Transform WooCommerce order data to our format
       const orderData = {
         woocommerceId: webhookData.id?.toString() || Date.now().toString(),
         status: "pending",
-        type: webhookData.meta_data?.find((m: any) => m.key === 'delivery_type')?.value || "delivery",
+        type: webhookData.shipping_lines?.length > 0 ? "delivery" : "pickup",
         customerName: `${webhookData.billing?.first_name || ''} ${webhookData.billing?.last_name || ''}`.trim(),
-        customerPhone: webhookData.billing?.phone || '',
+        customerPhone: webhookData.billing?.phone || 'Ei numeroa',
         customerEmail: webhookData.billing?.email || '',
-        total: `${webhookData.total || '0'}€`,
-        subtotal: `${webhookData.subtotal || '0'}€`,
-        deliveryFee: webhookData.shipping_total ? `${webhookData.shipping_total}€` : null,
+        total: `${webhookData.total || '0'} €`,
+        subtotal: `${webhookData.subtotal || '0'} €`,
+        deliveryFee: webhookData.shipping_total ? `${webhookData.shipping_total} €` : null,
         items: JSON.stringify(webhookData.line_items?.map((item: any) => ({
           name: item.name,
           quantity: item.quantity,
-          price: `${item.total}€`,
-          meta: item.meta_data
+          price: `${item.total} €`,
+          variations: item.meta_data?.map((meta: any) => `${meta.display_key}: ${meta.display_value}`) || []
         })) || []),
         notes: webhookData.customer_note || null,
         addressStreet: webhookData.shipping?.address_1 || webhookData.billing?.address_1 || '',

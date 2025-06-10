@@ -22,9 +22,13 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     printerAddress: '192.168.1.100',
     audioEnabled: true,
     audioVolume: 80,
-    shopUrl: '',
-    apiKey: '',
+    shopUrl: 'https://helmies.fi',
+    consumerKey: 'ck_edfde45d123a01595797228ecacea44181d05ea4',
+    consumerSecret: 'cs_650879cb1fd02f1331bed8bc948852d4d2b6c701',
   });
+
+  const [isTestingWooCommerce, setIsTestingWooCommerce] = useState(false);
+  const [wooCommerceStatus, setWooCommerceStatus] = useState<'unknown' | 'connected' | 'error'>('unknown');
 
   const { data: settingsData } = useQuery({
     queryKey: ['/api/settings'],
@@ -106,6 +110,41 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
       description: "Odota hetki...",
     });
     testPrinterMutation.mutate();
+  };
+
+  const testWooCommerceConnection = async () => {
+    setIsTestingWooCommerce(true);
+    try {
+      const response = await apiRequest('POST', '/api/woocommerce/test', {
+        shopUrl: settings.shopUrl,
+        consumerKey: settings.consumerKey,
+        consumerSecret: settings.consumerSecret,
+      });
+
+      if (response.success) {
+        setWooCommerceStatus('connected');
+        toast({
+          title: "WooCommerce yhteys toimii",
+          description: "API-yhteys helmies.fi:hin onnistui",
+        });
+      } else {
+        setWooCommerceStatus('error');
+        toast({
+          title: "WooCommerce yhteysvirhe",
+          description: response.message || "Tarkista API-tunnukset",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      setWooCommerceStatus('error');
+      toast({
+        title: "WooCommerce yhteysvirhe",
+        description: "Verkkovirhe tai väärät tunnukset",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingWooCommerce(false);
+    }
   };
 
   return (
@@ -202,19 +241,42 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               </div>
               
               <div>
-                <Label htmlFor="apiKey">API-avain</Label>
+                <Label htmlFor="consumerKey">Consumer Key</Label>
                 <Input
-                  id="apiKey"
+                  id="consumerKey"
                   type="password"
-                  value={settings.apiKey}
-                  onChange={(e) => setSettings(prev => ({ ...prev, apiKey: e.target.value }))}
-                  placeholder="••••••••••••"
+                  value={settings.consumerKey}
+                  onChange={(e) => setSettings(prev => ({ ...prev, consumerKey: e.target.value }))}
+                  placeholder="ck_••••••••••••"
                 />
               </div>
               
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-green-600">Yhdistetty</span>
+              <div>
+                <Label htmlFor="consumerSecret">Consumer Secret</Label>
+                <Input
+                  id="consumerSecret"
+                  type="password"
+                  value={settings.consumerSecret}
+                  onChange={(e) => setSettings(prev => ({ ...prev, consumerSecret: e.target.value }))}
+                  placeholder="cs_••••••••••••"
+                />
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={testWooCommerceConnection}
+                disabled={isTestingWooCommerce}
+                className="w-full mt-3"
+              >
+                {isTestingWooCommerce ? 'Testataan...' : 'Testaa yhteys'}
+              </Button>
+              
+              <div className="flex items-center space-x-2 mt-2">
+                <div className={`w-2 h-2 rounded-full ${wooCommerceStatus === 'connected' ? 'bg-green-500' : wooCommerceStatus === 'error' ? 'bg-red-500' : 'bg-gray-400'}`}></div>
+                <span className={`text-sm ${wooCommerceStatus === 'connected' ? 'text-green-600' : wooCommerceStatus === 'error' ? 'text-red-600' : 'text-gray-500'}`}>
+                  {wooCommerceStatus === 'connected' ? 'Yhdistetty' : wooCommerceStatus === 'error' ? 'Yhteysvirhe' : 'Ei testattu'}
+                </span>
               </div>
             </div>
           </div>
