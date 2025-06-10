@@ -1,0 +1,54 @@
+Develop an android app to receive (accept or refuse) orders from woocommerce with its complete details, address and so on..
+This is gonna be a restaurant kitchen app and the process shall be the next.
+1- Client will make an order through woocommerce.
+2- The mobile app keep ringing a notification with a pop up comes with the complete order details, address,.. and two buttons down there Accept and Refuse.
+3- If refused, then the order be canceled.
+4- If order is accepted, then the order should be processing and the receipt be printed by the connected bluetooth thermal printer or same network thermal printer with full details as following
+╔═══════════════════════════════════╗
+║        RAVINTOLA TIRVA            ║
+║      [Restaurant Logo Here]       ║
+║═══════════════════════════════════║
+║ Tilaus #: 12345                   ║
+║ Päivä: 06.06.2025 14:30          ║
+║ Tyyppi: Toimitus/Nouto           ║
+║═══════════════════════════════════║
+║ TILAUSTIEDOT:                     ║
+║                                   ║
+║ 2x Margherita Pizza (L)    24.00€ ║
+║    + Extra juusto           2.00€ ║
+║    + Kinkku                 3.00€ ║
+║                                   ║
+║ 1x Coca Cola 0.5L           3.50€ ║
+║                                   ║
+║ Lisätiedot:                       ║
+║ "Ei sipulia, hyvin paistettuna"   ║
+║                                   ║
+║───────────────────────────────────║
+║ Välisumma:               29.00€   ║
+║ Toimitusmaksu:            3.50€   ║
+║ YHTEENSÄ:                32.50€   ║
+║═══════════════════════════════════║
+║ ASIAKASTIEDOT:                    ║
+║ Nimi: Matti Meikäläinen           ║
+║ Puh: +358 40 123 4567            ║
+║ Email: matti@email.com            ║
+║                                   ║
+║ TOIMITUSOSOITE:                   ║
+║ Esimerkkikatu 123 A 45            ║
+║ 00100 Helsinki                    ║
+║                                   ║
+║ Lisäohjeet:                       ║
+║ "2. kerros, ovikello 'Meikäläinen'║
+║                                   ║
+║═══════════════════════════════════║
+║ Tilaus vastaanotettu: 14:30       ║
+║ Arvioitu valmistumisaika: 15:00   ║
+║═══════════════════════════════════║
+║        Kiitos tilauksesta!        ║
+║      www.ravintolatirva.fi        ║
+╚═══════════════════════════════════╝
+
+Also orders tab to see all orders, completed, processing, refused,...
+Also settings to integrate with the printer...
+
+I should sign in with woocommerce/jetpack some how if possible....
