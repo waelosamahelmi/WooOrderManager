@@ -136,12 +136,13 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
     });
     
     try {
-      const response: any = await apiRequest('POST', '/api/woocommerce/test', {
+      const res = await apiRequest('POST', '/api/woocommerce/test', {
         shopUrl: settings.shopUrl,
         consumerKey: settings.consumerKey,
         consumerSecret: settings.consumerSecret,
       });
 
+      const response = await res.json();
       console.log('WooCommerce test response:', response);
 
       if (response.success) {
