@@ -1,10 +1,6 @@
-import { useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { printReceipt } from "@/lib/print";
+import { X, Printer } from "lucide-react";
 import type { Order } from "@shared/schema";
 
 interface PrintPreviewProps {
@@ -13,155 +9,144 @@ interface PrintPreviewProps {
 }
 
 export function PrintPreview({ order, onClose }: PrintPreviewProps) {
-  const { toast } = useToast();
-  const items = JSON.parse(order.items || '[]');
-
-  const printMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest('PATCH', `/api/orders/${order.id}/print`, {});
-      await printReceipt(order);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Kuitti tulostettu!",
-        description: "Tilauksen kuitti on lähetetty tulostimeen",
-      });
-      onClose();
-    },
-    onError: () => {
-      toast({
-        title: "Tulostusvirhe",
-        description: "Kuitin tulostaminen epäonnistui",
-        variant: "destructive",
-      });
+  const formatReceiptText = () => {
+    const lines = [];
+    
+    // Header
+    lines.push("=====================================");
+    lines.push("         RAVINTOLA TIRVA");
+    lines.push("=====================================");
+    lines.push("");
+    
+    // Order info
+    lines.push(`Tilaus: #${order.woocommerceId}`);
+    lines.push(`Päivämäärä: ${new Date(order.receivedAt).toLocaleString('fi-FI')}`);
+    lines.push(`Tyyppi: ${order.type === 'delivery' ? 'Kotiinkuljetus' : 'Nouto'}`);
+    lines.push("");
+    
+    // Customer info
+    lines.push("ASIAKASTIEDOT:");
+    lines.push(`Nimi: ${order.customerName}`);
+    if (order.customerPhone) {
+      lines.push(`Puhelin: ${order.customerPhone}`);
     }
-  });
+    if (order.customerEmail) {
+      lines.push(`Sähköposti: ${order.customerEmail}`);
+    }
+    lines.push("");
+    
+    // Delivery address if applicable
+    if (order.type === 'delivery' && order.deliveryAddress) {
+      lines.push("TOIMITUSOSOITE:");
+      lines.push(order.deliveryAddress);
+      lines.push("");
+    }
+    
+    // Order items
+    lines.push("TILAUKSEN SISÄLTÖ:");
+    lines.push("-------------------------------------");
+    
+    try {
+      const items = JSON.parse(order.items);
+      items.forEach((item: any) => {
+        lines.push(`${item.quantity}x ${item.name}`);
+        if (item.price) {
+          lines.push(`    ${parseFloat(item.price).toFixed(2)}€`);
+        }
+        if (item.meta && item.meta.length > 0) {
+          item.meta.forEach((meta: any) => {
+            lines.push(`    - ${meta.key}: ${meta.value}`);
+          });
+        }
+        lines.push("");
+      });
+    } catch (e) {
+      lines.push("Tilauksen tiedot ei saatavilla");
+      lines.push("");
+    }
+    
+    lines.push("-------------------------------------");
+    
+    // Totals
+    if (order.subtotal) {
+      lines.push(`Välisumma: ${order.subtotal}€`);
+    }
+    if (order.deliveryFee) {
+      lines.push(`Toimitusmaksu: ${order.deliveryFee}€`);
+    }
+    if (order.taxAmount) {
+      lines.push(`ALV: ${order.taxAmount}€`);
+    }
+    lines.push(`YHTEENSÄ: ${order.total}€`);
+    lines.push("");
+    
+    // Payment info
+    if (order.paymentMethod) {
+      lines.push(`Maksutapa: ${order.paymentMethod}`);
+    }
+    lines.push("");
+    
+    // Notes
+    if (order.notes) {
+      lines.push("HUOMIOT:");
+      lines.push(order.notes);
+      lines.push("");
+    }
+    
+    // Footer
+    lines.push("=====================================");
+    lines.push("        Kiitos tilauksestasi!");
+    lines.push("=====================================");
+    
+    return lines.join('\n');
+  };
 
-  const handlePrint = () => {
-    printMutation.mutate();
+  const handleCopyToClipboard = () => {
+    navigator.clipboard.writeText(formatReceiptText());
   };
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Kuitin esikatselu</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Printer className="w-5 h-5" />
+              Tulostuksen esikatselu - Tilaus #{order.woocommerceId}
+            </span>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="p-6">
-          <div className="font-mono text-xs bg-white p-6 rounded-lg border-2 border-gray-300 max-w-sm mx-auto leading-tight shadow-lg">
-            {/* Header */}
-            <div className="text-center border-b-2 border-gray-800 pb-3 mb-3">
-              <div className="font-bold text-lg mb-1">RAVINTOLA TIRVA</div>
-              <div className="text-xs text-gray-600 mb-2">🍽️ Premium Dining Experience 🍽️</div>
-              <div className="text-xs">Helmies.fi • Finland</div>
-            </div>
-            
-            {/* Order Info */}
-            <div className="border-b border-gray-400 pb-2 mb-2 text-xs">
-              <div>Tilaus #: {order.woocommerceId}</div>
-              <div>Päivä: {new Date(order.receivedAt).toLocaleDateString('fi-FI')} {new Date(order.receivedAt).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' })}</div>
-              <div>Tyyppi: {order.type === 'delivery' ? 'Toimitus' : 'Nouto'}</div>
-            </div>
-            
-            {/* Order Items */}
-            <div className="border-b border-gray-400 pb-2 mb-2">
-              <div className="font-bold mb-1 text-xs">TILAUSTIEDOT:</div>
-              <div className="space-y-1">
-                {items.map((item: any, index: number) => (
-                  <div key={index}>
-                    <div className="flex justify-between text-xs">
-                      <span>{item.quantity}x {item.name}</span>
-                      <span>{item.price}</span>
-                    </div>
-                    {item.meta && item.meta.map((meta: any, metaIndex: number) => (
-                      <div key={metaIndex} className="ml-2 text-xs">
-                        + {meta.key}: {meta.value}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-              {order.notes && (
-                <div className="mt-2">
-                  <div className="font-bold text-xs">Lisätiedot:</div>
-                  <div className="text-xs">"{order.notes}"</div>
-                </div>
-              )}
-            </div>
-            
-            {/* Total */}
-            <div className="border-b border-gray-400 pb-2 mb-2 text-xs">
-              <div className="flex justify-between">
-                <span>Välisumma:</span>
-                <span>{order.subtotal}</span>
-              </div>
-              {order.deliveryFee && (
-                <div className="flex justify-between">
-                  <span>Toimitusmaksu:</span>
-                  <span>{order.deliveryFee}</span>
-                </div>
-              )}
-              <div className="flex justify-between font-bold">
-                <span>YHTEENSÄ:</span>
-                <span>{order.total}</span>
-              </div>
-            </div>
-            
-            {/* Customer Info */}
-            <div className="border-b border-gray-400 pb-2 mb-2 text-xs">
-              <div className="font-bold mb-1">ASIAKASTIEDOT:</div>
-              <div>Nimi: {order.customerName}</div>
-              <div>Puh: {order.customerPhone}</div>
-              <div>Email: {order.customerEmail}</div>
-              
-              {order.type === 'delivery' && (
-                <div className="mt-2">
-                  <div className="font-bold">TOIMITUSOSOITE:</div>
-                  <div>{order.addressStreet}</div>
-                  <div>{order.addressCity}</div>
-                  {order.addressInstructions && (
-                    <div className="mt-1">
-                      <div className="font-bold">Lisäohjeet:</div>
-                      <div className="text-xs">"{order.addressInstructions}"</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            
-            {/* Timeline */}
-            <div className="border-b border-gray-400 pb-2 mb-2 text-xs">
-              <div>Tilaus vastaanotettu: {new Date(order.receivedAt).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' })}</div>
-              {order.estimatedTime && (
-                <div>Arvioitu valmistumisaika: {order.estimatedTime}</div>
-              )}
-            </div>
-            
-            {/* Footer */}
-            <div className="text-center text-xs">
-              <div>Kiitos tilauksesta!</div>
-              <div className="text-xs">www.ravintolatirva.fi</div>
+        <div className="space-y-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="font-semibold mb-2">Kuitti näyttäisi tältä tulostettuna:</h3>
+            <div className="bg-white border border-gray-200 p-4 rounded font-mono text-sm whitespace-pre-wrap max-h-96 overflow-y-auto">
+              {formatReceiptText()}
             </div>
           </div>
-        </div>
 
-        <div className="flex gap-3 border-t border-gray-200 pt-6">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="flex-1"
-          >
-            Peruuta
-          </Button>
-          <Button
-            onClick={handlePrint}
-            disabled={printMutation.isPending}
-            className="flex-1 bg-green-700 hover:bg-green-800"
-          >
-            <Printer className="w-4 h-4 mr-2" />
-            {printMutation.isPending ? 'Tulostetaan...' : 'Tulosta'}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleCopyToClipboard} variant="outline" className="flex-1">
+              Kopioi leikepöydälle
+            </Button>
+            <Button onClick={onClose} className="flex-1">
+              Sulje
+            </Button>
+          </div>
+
+          <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded">
+            <p className="font-semibold mb-1">💡 Tulostimen testaus:</p>
+            <p>Kun sinulla on verkkotulostin käytettävissä:</p>
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li>Varmista että tulostin on samassa verkossa</li>
+              <li>Aseta tulostimen IP-osoite asetuksissa</li>
+              <li>Tulostin tukee ESC/POS komentoja (useimmat keittiötulosttimet)</li>
+              <li>Portti on yleensä 9100 (voidaan muuttaa asetuksissa)</li>
+            </ul>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
