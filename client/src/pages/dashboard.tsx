@@ -22,6 +22,9 @@ export default function Dashboard() {
   const [newOrderNotification, setNewOrderNotification] = useState<Order | null>(null);
 
   const { data: orders = [], isLoading, refetch } = useOrders();
+  // Temporarily disable WebSocket to fix connection issues
+  const isConnected = false;
+  /*
   const { isConnected } = useWebSocket({
     onMessage: (data) => {
       if (data.type === 'NEW_ORDER') {
@@ -33,6 +36,7 @@ export default function Dashboard() {
       }
     }
   });
+  */
 
   const filteredOrders = orders.filter(order => {
     if (activeFilter === "all") return true;

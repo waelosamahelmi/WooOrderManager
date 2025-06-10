@@ -31,7 +31,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   });
 
   useEffect(() => {
-    if (settingsData) {
+    if (settingsData && Array.isArray(settingsData)) {
       const settingsMap = settingsData.reduce((acc: any, setting: any) => {
         acc[setting.key] = setting.value;
         return acc;
@@ -42,7 +42,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         printerAddress: settingsMap.printerAddress || '192.168.1.100',
         audioEnabled: settingsMap.audioEnabled === 'true',
         audioVolume: parseInt(settingsMap.audioVolume) || 80,
-        shopUrl: settingsMap.shopUrl || '',
+        shopUrl: settingsMap.shopUrl || 'https://helmies.fi',
         apiKey: settingsMap.apiKey || '',
       });
     }
@@ -110,12 +110,12 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Asetukset</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 pb-4">
           {/* Printer Settings */}
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Tulostin</h3>
@@ -190,8 +190,8 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
           {/* WooCommerce Settings */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">WooCommerce</h3>
-            <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">WooCommerce</h3>
+            <div className="space-y-3">
               <div>
                 <Label htmlFor="shopUrl">Kaupan URL</Label>
                 <Input
@@ -199,7 +199,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   type="url"
                   value={settings.shopUrl}
                   onChange={(e) => setSettings(prev => ({ ...prev, shopUrl: e.target.value }))}
-                  placeholder="https://myshop.com"
+                  placeholder="https://helmies.fi"
                 />
               </div>
               
@@ -212,6 +212,14 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   onChange={(e) => setSettings(prev => ({ ...prev, apiKey: e.target.value }))}
                   placeholder="••••••••••••"
                 />
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                <h4 className="text-sm font-medium text-blue-800 mb-2">Esimerkkitunnukset</h4>
+                <div className="text-xs text-blue-700 space-y-1">
+                  <div><strong>Sähköposti:</strong> wael@helmies.fi</div>
+                  <div><strong>Salasana:</strong> Weezy@1996</div>
+                </div>
               </div>
               
               <div className="flex items-center space-x-2">

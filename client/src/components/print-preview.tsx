@@ -49,11 +49,12 @@ export function PrintPreview({ order, onClose }: PrintPreviewProps) {
         </DialogHeader>
 
         <div className="p-6">
-          <div className="font-mono text-xs bg-gray-50 p-4 rounded border max-w-sm mx-auto leading-tight">
+          <div className="font-mono text-xs bg-white p-6 rounded-lg border-2 border-gray-300 max-w-sm mx-auto leading-tight shadow-lg">
             {/* Header */}
-            <div className="text-center border-b border-gray-400 pb-2 mb-2">
-              <div className="font-bold text-sm">RAVINTOLA TIRVA</div>
-              <div className="text-xs text-gray-600">[Restaurant Logo Here]</div>
+            <div className="text-center border-b-2 border-gray-800 pb-3 mb-3">
+              <div className="font-bold text-lg mb-1">RAVINTOLA TIRVA</div>
+              <div className="text-xs text-gray-600 mb-2">🍽️ Premium Dining Experience 🍽️</div>
+              <div className="text-xs">Helmies.fi • Finland</div>
             </div>
             
             {/* Order Info */}

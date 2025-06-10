@@ -31,15 +31,17 @@ export function useWebSocket({ onMessage }: UseWebSocketProps) {
           }
         };
 
-        wsRef.current.onclose = () => {
+        wsRef.current.onclose = (event) => {
           console.log('WebSocket disconnected');
           setIsConnected(false);
           
-          // Attempt to reconnect after 3 seconds
-          reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('Attempting to reconnect...');
-            connect();
-          }, 3000);
+          // Only reconnect if it wasn't a clean close
+          if (event.code !== 1000) {
+            reconnectTimeoutRef.current = setTimeout(() => {
+              console.log('Attempting to reconnect...');
+              connect();
+            }, 3000);
+          }
         };
 
         wsRef.current.onerror = (error) => {

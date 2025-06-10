@@ -75,6 +75,11 @@ export class MemStorage implements IStorage {
       receivedAt: new Date(),
       printedAt: null,
       deliveryFee: insertOrder.deliveryFee || null,
+      notes: insertOrder.notes || null,
+      addressStreet: insertOrder.addressStreet || null,
+      addressCity: insertOrder.addressCity || null,
+      addressInstructions: insertOrder.addressInstructions || null,
+      estimatedTime: insertOrder.estimatedTime || null,
     };
     this.orders.set(id, order);
     return order;
