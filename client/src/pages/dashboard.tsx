@@ -8,8 +8,11 @@ import { NotificationPopup } from "@/components/notification-popup";
 import { PrintPreview } from "@/components/print-preview";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Utensils, Wifi } from "lucide-react";
+import { Settings, Utensils, Wifi, Plus } from "lucide-react";
 import { playNotificationSound } from "@/lib/audio";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Order } from "@shared/schema";
 
 type OrderStatus = "all" | "pending" | "processing" | "completed" | "refused";
@@ -20,8 +23,32 @@ export default function Dashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [newOrderNotification, setNewOrderNotification] = useState<Order | null>(null);
+  const { toast } = useToast();
 
   const { data: orders = [], isLoading, refetch } = useOrders();
+  
+  const createTestOrderMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/api/test/order', {});
+    },
+    onSuccess: (newOrder: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      setNewOrderNotification(newOrder);
+      playNotificationSound();
+      toast({
+        title: "Testijärjestys luotu!",
+        description: "Uusi testijärjestys on lisätty järjestelmään",
+      });
+      refetch();
+    },
+    onError: () => {
+      toast({
+        title: "Virhe",
+        description: "Testijärjestyksen luominen epäonnistui",
+        variant: "destructive",
+      });
+    }
+  });
   // Temporarily disable WebSocket to fix connection issues
   const isConnected = false;
   /*
@@ -102,6 +129,17 @@ export default function Dashboard() {
                   {isConnected ? 'Yhdistetty' : 'Ei yhteyttä'}
                 </span>
               </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => createTestOrderMutation.mutate()}
+                disabled={createTestOrderMutation.isPending}
+                className="text-green-700 border-green-700 hover:bg-green-50"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {createTestOrderMutation.isPending ? 'Luodaan...' : 'Testi tilaus'}
+              </Button>
               
               <Button
                 variant="ghost"
