@@ -52,20 +52,55 @@ export default function Dashboard() {
     }
   });
   // Temporarily disable WebSocket to fix connection issues
-  const isConnected = false;
-  /*
   const { isConnected } = useWebSocket({
     onMessage: (data) => {
       if (data.type === 'NEW_ORDER') {
         setNewOrderNotification(data.data);
         playNotificationSound();
         refetch();
+        
+        // Show service worker notification for background support
+        if ('serviceWorker' in navigator && 'Notification' in window && Notification.permission === 'granted') {
+          navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification(`Uusi tilaus #${data.data.orderNumber}`, {
+              body: `Asiakas: ${data.data.customerName}\nSumma: ${data.data.total}`,
+              icon: '/favicon.ico',
+              badge: '/favicon.ico',
+              tag: 'order-notification',
+              requireInteraction: true,
+              actions: [
+                { action: 'accept', title: 'Hyväksy' },
+                { action: 'view', title: 'Näytä' }
+              ],
+              data: data.data
+            });
+          });
+        }
       } else if (data.type === 'ORDER_STATUS_UPDATE') {
         refetch();
       }
     }
   });
-  */
+
+  // Initialize service worker and notifications on mount
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      if ('Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('/sw.js');
+          console.log('Service Worker registered for background notifications');
+        } catch (error) {
+          console.error('Service Worker registration failed:', error);
+        }
+      }
+    };
+
+    initializeNotifications();
+  }, []);
 
   const filteredOrders = orders.filter(order => {
     if (activeFilter === "all") return true;
