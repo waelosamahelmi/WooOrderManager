@@ -132,7 +132,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   <SelectContent>
                     <SelectItem value="network">Verkkotulostin</SelectItem>
                     <SelectItem value="bluetooth">Bluetooth-tulostin</SelectItem>
-                    <SelectItem value="usb">USB-tulostin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
