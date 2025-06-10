@@ -31,23 +31,37 @@ export class MemStorage implements IStorage {
     this.initializeDefaultSettings();
   }
 
+  // Method to reset settings (useful for development)
+  resetSettings() {
+    this.settings.clear();
+    this.currentSettingId = 1;
+    this.initializeDefaultSettings();
+  }
+
   private initializeDefaultSettings() {
     const defaultSettings = [
       { key: 'printerType', value: 'network' },
-      { key: 'printerAddress', value: '192.168.1.100' },
+      { key: 'printerIp', value: '192.168.1.100' },
+      { key: 'printerPort', value: '9100' },
+      { key: 'printerName', value: 'Kitchen Printer' },
       { key: 'audioEnabled', value: 'true' },
       { key: 'audioVolume', value: '80' },
-      { key: 'shopUrl', value: 'https://helmies.fi' },
-      { key: 'apiKey', value: '' },
+      { key: 'woocommerceUrl', value: 'https://mediumorchid-yak-784527.hostingersite.com' },
+      { key: 'woocommerceKey', value: 'ck_edfde45d123a01595797228ecacea44181d05ea4' },
+      { key: 'woocommerceSecret', value: 'cs_650879cb1fd02f1331bed8bc948852d4d2b6c701' },
+      { key: 'webhookSecret', value: '' },
     ];
 
     defaultSettings.forEach(setting => {
-      const settingWithId: Setting = {
-        id: this.currentSettingId++,
-        key: setting.key,
-        value: setting.value,
-      };
-      this.settings.set(setting.key, settingWithId);
+      // Only set if not already exists (prevents overwriting user changes)
+      if (!this.settings.has(setting.key)) {
+        const settingWithId: Setting = {
+          id: this.currentSettingId++,
+          key: setting.key,
+          value: setting.value,
+        };
+        this.settings.set(setting.key, settingWithId);
+      }
     });
   }
 

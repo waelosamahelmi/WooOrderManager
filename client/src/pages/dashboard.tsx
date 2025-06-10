@@ -68,10 +68,7 @@ export default function Dashboard() {
               badge: '/favicon.ico',
               tag: 'order-notification',
               requireInteraction: true,
-              actions: [
-                { action: 'accept', title: 'Hyväksy' },
-                { action: 'view', title: 'Näytä' }
-              ],
+
               data: data.data
             });
           });

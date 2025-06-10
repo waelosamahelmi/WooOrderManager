@@ -156,6 +156,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reset settings endpoint for fixing persistence issues
+  app.post("/api/settings/reset", async (req, res) => {
+    try {
+      (storage as any).resetSettings();
+      const settings = await storage.getSettings();
+      res.json({ message: "Settings reset successfully", settings });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reset settings" });
+    }
+  });
+
   // WooCommerce API test endpoint
   app.post("/api/woocommerce/test", async (req, res) => {
     try {

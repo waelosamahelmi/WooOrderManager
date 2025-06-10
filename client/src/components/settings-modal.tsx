@@ -51,9 +51,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         printerName: settingsMap.printerName || 'Kitchen Printer',
         audioEnabled: settingsMap.audioEnabled === 'true',
         audioVolume: parseInt(settingsMap.audioVolume) || 80,
-        shopUrl: settingsMap.shopUrl || 'https://mediumorchid-yak-784527.hostingersite.com',
-        consumerKey: settingsMap.consumerKey || 'ck_edfde45d123a01595797228ecacea44181d05ea4',
-        consumerSecret: settingsMap.consumerSecret || 'cs_650879cb1fd02f1331bed8bc948852d4d2b6c701',
+        shopUrl: settingsMap.woocommerceUrl || 'https://mediumorchid-yak-784527.hostingersite.com',
+        consumerKey: settingsMap.woocommerceKey || 'ck_edfde45d123a01595797228ecacea44181d05ea4',
+        consumerSecret: settingsMap.woocommerceSecret || 'cs_650879cb1fd02f1331bed8bc948852d4d2b6c701',
         webhookSecret: settingsMap.webhookSecret || '',
       });
     }
@@ -61,12 +61,20 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
   const saveSettingsMutation = useMutation({
     mutationFn: async (newSettings: typeof settings) => {
-      const promises = Object.entries(newSettings).map(([key, value]) =>
-        apiRequest('POST', '/api/settings', { 
-          key, 
+      // Map frontend setting names to backend setting names
+      const settingMappings = {
+        shopUrl: 'woocommerceUrl',
+        consumerKey: 'woocommerceKey', 
+        consumerSecret: 'woocommerceSecret',
+      };
+      
+      const promises = Object.entries(newSettings).map(([key, value]) => {
+        const backendKey = (settingMappings as any)[key] || key;
+        return apiRequest('POST', '/api/settings', { 
+          key: backendKey, 
           value: typeof value === 'boolean' ? value.toString() : value.toString() 
-        })
-      );
+        });
+      });
       await Promise.all(promises);
     },
     onSuccess: () => {
