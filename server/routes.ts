@@ -35,6 +35,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  // Authentication API
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      // Simple authentication check
+      if (email === "wael@helmies.fi" && password === "Weezy@1996") {
+        res.json({ success: true, message: "Login successful" });
+      } else {
+        res.status(401).json({ error: "Invalid credentials" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Authentication failed" });
+    }
+  });
+
   // Orders API
   app.get("/api/orders", async (req, res) => {
     try {

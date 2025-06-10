@@ -214,14 +214,6 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                 />
               </div>
               
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
-                <h4 className="text-sm font-medium text-blue-800 mb-2">Esimerkkitunnukset</h4>
-                <div className="text-xs text-blue-700 space-y-1">
-                  <div><strong>Sähköposti:</strong> wael@helmies.fi</div>
-                  <div><strong>Salasana:</strong> Weezy@1996</div>
-                </div>
-              </div>
-              
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-sm text-green-600">Yhdistetty</span>

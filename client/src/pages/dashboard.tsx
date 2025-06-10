@@ -8,11 +8,12 @@ import { NotificationPopup } from "@/components/notification-popup";
 import { PrintPreview } from "@/components/print-preview";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Utensils, Wifi, Plus } from "lucide-react";
+import { Settings, Utensils, Wifi, Plus, LogOut } from "lucide-react";
 import { playNotificationSound } from "@/lib/audio";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import type { Order } from "@shared/schema";
 
 type OrderStatus = "all" | "pending" | "processing" | "completed" | "refused";
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [newOrderNotification, setNewOrderNotification] = useState<Order | null>(null);
   const { toast } = useToast();
+  const { logout } = useAuth();
 
   const { data: orders = [], isLoading, refetch } = useOrders();
   
@@ -148,6 +150,16 @@ export default function Dashboard() {
                 className="p-2 text-gray-600 hover:text-gray-800"
               >
                 <Settings className="w-5 h-5" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                className="p-2 text-red-600 hover:text-red-800"
+                title="Kirjaudu ulos"
+              >
+                <LogOut className="w-5 h-5" />
               </Button>
             </div>
           </div>
