@@ -19,12 +19,15 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const { toast } = useToast();
   const [settings, setSettings] = useState({
     printerType: 'network',
-    printerAddress: '192.168.1.100',
+    printerIp: '192.168.1.100',
+    printerPort: '9100',
+    printerName: 'Kitchen Printer',
     audioEnabled: true,
     audioVolume: 80,
-    shopUrl: 'https://helmies.fi',
+    shopUrl: 'https://mediumorchid-yak-784527.hostingersite.com',
     consumerKey: 'ck_edfde45d123a01595797228ecacea44181d05ea4',
     consumerSecret: 'cs_650879cb1fd02f1331bed8bc948852d4d2b6c701',
+    webhookSecret: '',
   });
 
   const [isTestingWooCommerce, setIsTestingWooCommerce] = useState(false);
@@ -43,11 +46,15 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
       
       setSettings({
         printerType: settingsMap.printerType || 'network',
-        printerAddress: settingsMap.printerAddress || '192.168.1.100',
+        printerIp: settingsMap.printerIp || '192.168.1.100',
+        printerPort: settingsMap.printerPort || '9100',
+        printerName: settingsMap.printerName || 'Kitchen Printer',
         audioEnabled: settingsMap.audioEnabled === 'true',
         audioVolume: parseInt(settingsMap.audioVolume) || 80,
-        shopUrl: settingsMap.shopUrl || 'https://helmies.fi',
-        apiKey: settingsMap.apiKey || '',
+        shopUrl: settingsMap.shopUrl || 'https://mediumorchid-yak-784527.hostingersite.com',
+        consumerKey: settingsMap.consumerKey || 'ck_edfde45d123a01595797228ecacea44181d05ea4',
+        consumerSecret: settingsMap.consumerSecret || 'cs_650879cb1fd02f1331bed8bc948852d4d2b6c701',
+        webhookSecret: settingsMap.webhookSecret || '',
       });
     }
   }, [settingsData]);
@@ -115,7 +122,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
   const testWooCommerceConnection = async () => {
     setIsTestingWooCommerce(true);
     try {
-      const response = await apiRequest('POST', '/api/woocommerce/test', {
+      const response: any = await apiRequest('POST', '/api/woocommerce/test', {
         shopUrl: settings.shopUrl,
         consumerKey: settings.consumerKey,
         consumerSecret: settings.consumerSecret,
@@ -125,7 +132,7 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         setWooCommerceStatus('connected');
         toast({
           title: "WooCommerce yhteys toimii",
-          description: "API-yhteys helmies.fi:hin onnistui",
+          description: "API-yhteys kauppaan onnistui",
         });
       } else {
         setWooCommerceStatus('error');
@@ -175,12 +182,32 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               </div>
               
               <div>
-                <Label htmlFor="printerAddress">IP-osoite / Nimi</Label>
+                <Label htmlFor="printerIp">IP-osoite</Label>
                 <Input
-                  id="printerAddress"
-                  value={settings.printerAddress}
-                  onChange={(e) => setSettings(prev => ({ ...prev, printerAddress: e.target.value }))}
+                  id="printerIp"
+                  value={settings.printerIp}
+                  onChange={(e) => setSettings(prev => ({ ...prev, printerIp: e.target.value }))}
                   placeholder="192.168.1.100"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="printerPort">Portti</Label>
+                <Input
+                  id="printerPort"
+                  value={settings.printerPort}
+                  onChange={(e) => setSettings(prev => ({ ...prev, printerPort: e.target.value }))}
+                  placeholder="9100"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="printerName">Tulostimen nimi</Label>
+                <Input
+                  id="printerName"
+                  value={settings.printerName}
+                  onChange={(e) => setSettings(prev => ({ ...prev, printerName: e.target.value }))}
+                  placeholder="Kitchen Printer"
                 />
               </div>
               
@@ -259,6 +286,17 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                   value={settings.consumerSecret}
                   onChange={(e) => setSettings(prev => ({ ...prev, consumerSecret: e.target.value }))}
                   placeholder="cs_••••••••••••"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="webhookSecret">Webhook Secret</Label>
+                <Input
+                  id="webhookSecret"
+                  type="password"
+                  value={settings.webhookSecret}
+                  onChange={(e) => setSettings(prev => ({ ...prev, webhookSecret: e.target.value }))}
+                  placeholder="Webhook secret key"
                 />
               </div>
               

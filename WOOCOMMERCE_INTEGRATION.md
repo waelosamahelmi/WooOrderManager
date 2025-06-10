@@ -3,7 +3,7 @@
 ## Step 1: WooCommerce Store Setup
 
 ### 1.1 Install Required Plugins
-1. Log into your WordPress admin panel at `https://helmies.fi/wp-admin`
+1. Log into your WordPress admin panel at `https://mediumorchid-yak-784527.hostingersite.com/wp-admin`
 2. Go to **Plugins > Add New**
 3. Install and activate:
    - **WooCommerce** (core plugin)
