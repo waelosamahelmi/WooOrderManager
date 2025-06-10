@@ -7,7 +7,10 @@ import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
-  const wss = new WebSocketServer({ server: httpServer });
+  const wss = new WebSocketServer({ 
+    server: httpServer,
+    path: '/ws'
+  });
 
   // Store WebSocket connections
   const connections = new Set<any>();

@@ -74,6 +74,7 @@ export class MemStorage implements IStorage {
       id,
       receivedAt: new Date(),
       printedAt: null,
+      deliveryFee: insertOrder.deliveryFee || null,
     };
     this.orders.set(id, order);
     return order;
