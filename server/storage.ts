@@ -37,7 +37,7 @@ export class MemStorage implements IStorage {
       { key: 'printerAddress', value: '192.168.1.100' },
       { key: 'audioEnabled', value: 'true' },
       { key: 'audioVolume', value: '80' },
-      { key: 'shopUrl', value: '' },
+      { key: 'shopUrl', value: 'https://helmies.fi' },
       { key: 'apiKey', value: '' },
     ];
 
