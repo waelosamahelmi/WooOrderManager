@@ -68,6 +68,8 @@ export class NetworkPrinter {
     
     if (order.type === 'delivery' && order.shippingAddress) {
       receipt += `Osoite: ${order.shippingAddress}\n`;
+    } else if (order.type === 'delivery' && order.billingAddress) {
+      receipt += `Osoite: ${order.billingAddress}\n`;
     }
     
     receipt += `Aika: ${new Date().toLocaleString('fi-FI')}\n`;

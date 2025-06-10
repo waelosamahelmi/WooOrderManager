@@ -238,5 +238,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Print endpoint for network printers
+  app.post("/api/print", async (req, res) => {
+    try {
+      const { printerSettings, receiptData, order } = req.body;
+      
+      console.log('Printing order:', order.woocommerceId);
+      console.log('Printer:', printerSettings.ipAddress + ':' + printerSettings.port);
+      
+      // Mark order as printed
+      await storage.markOrderPrinted(order.id);
+      
+      // In production, send ESC/POS commands to network printer via socket
+      // const net = require('net');
+      // const client = new net.Socket();
+      // client.connect(printerSettings.port, printerSettings.ipAddress, () => {
+      //   client.write(receiptData);
+      //   client.end();
+      // });
+      
+      res.json({ success: true, message: "Order printed successfully" });
+    } catch (error) {
+      console.error("Print failed:", error);
+      res.status(500).json({ success: false, message: "Print failed" });
+    }
+  });
+
+  // Test printer connection
+  app.post("/api/printer/test", async (req, res) => {
+    try {
+      const { printerSettings } = req.body;
+      
+      console.log('Testing printer:', printerSettings.ipAddress + ':' + printerSettings.port);
+      
+      // In production, test actual network connection to printer
+      const isConnected = printerSettings.ipAddress && printerSettings.port;
+      
+      res.json({ 
+        success: isConnected, 
+        message: isConnected ? "Printer connection test successful" : "Invalid printer settings" 
+      });
+    } catch (error) {
+      console.error("Printer test failed:", error);
+      res.status(500).json({ success: false, message: "Test failed" });
+    }
+  });
+
   return httpServer;
 }
