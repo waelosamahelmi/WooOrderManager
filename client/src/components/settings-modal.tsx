@@ -129,12 +129,20 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
   const testWooCommerceConnection = async () => {
     setIsTestingWooCommerce(true);
+    console.log('Testing WooCommerce with settings:', {
+      shopUrl: settings.shopUrl,
+      consumerKey: settings.consumerKey?.substring(0, 10) + '...',
+      consumerSecret: settings.consumerSecret?.substring(0, 10) + '...'
+    });
+    
     try {
       const response: any = await apiRequest('POST', '/api/woocommerce/test', {
         shopUrl: settings.shopUrl,
         consumerKey: settings.consumerKey,
         consumerSecret: settings.consumerSecret,
       });
+
+      console.log('WooCommerce test response:', response);
 
       if (response.success) {
         setWooCommerceStatus('connected');
@@ -151,10 +159,11 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
         });
       }
     } catch (error) {
+      console.error('WooCommerce test error:', error);
       setWooCommerceStatus('error');
       toast({
         title: "WooCommerce yhteysvirhe",
-        description: "Verkkovirhe tai väärät tunnukset",
+        description: error instanceof Error ? error.message : "Verkkovirhe tai väärät tunnukset",
         variant: "destructive",
       });
     } finally {
