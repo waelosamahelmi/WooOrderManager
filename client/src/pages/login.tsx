@@ -75,7 +75,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="wael@helmies.fi"
+                placeholder="user@example.com"
                 className="w-full"
                 disabled={loginMutation.isPending}
               />
@@ -89,7 +89,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Weezy@1996"
+                  placeholder="••••••••"
                   className="w-full pr-10"
                   disabled={loginMutation.isPending}
                 />
@@ -115,14 +115,6 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               {loginMutation.isPending ? "Kirjaudutaan..." : "Kirjaudu sisään"}
             </Button>
           </form>
-          
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="text-sm font-medium text-blue-800 mb-2">Testikäyttäjä</h4>
-            <div className="text-xs text-blue-700 space-y-1">
-              <div><strong>Sähköposti:</strong> wael@helmies.fi</div>
-              <div><strong>Salasana:</strong> Weezy@1996</div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
