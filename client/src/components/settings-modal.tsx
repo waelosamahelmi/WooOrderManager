@@ -181,12 +181,12 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
       ...prev,
       printerIp: device.ip,
       printerPort: device.recommendedPort?.toString() || '9100',
-      printerName: device.name
+      printerName: device.name || `Device at ${device.ip}`
     }));
     setShowDeviceList(false);
     toast({
       title: "Laite valittu",
-      description: `${device.name} (${device.ip}:${device.recommendedPort})`,
+      description: `${device.name} (${device.ip}:${device.recommendedPort || '9100'}) - ${device.confidence || 0}% luottamus`,
     });
   };
 
@@ -323,7 +323,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               {/* Device Discovery Results */}
               {showDeviceList && discoveredDevices.length > 0 && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Löydetyt laitteet:</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    Löydetyt laitteet ({discoveredDevices.length} kpl):
+                  </h4>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {discoveredDevices.map((device, index) => (
                       <div
@@ -332,29 +334,56 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                         onClick={() => selectDevice(device)}
                       >
                         <div className="flex items-center">
-                          <Wifi className="w-4 h-4 text-green-600 mr-3" />
+                          <Wifi className={`w-4 h-4 mr-3 ${
+                            device.confidence >= 80 ? 'text-green-600' : 
+                            device.confidence >= 50 ? 'text-yellow-600' : 'text-gray-600'
+                          }`} />
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{device.name}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {device.name}
+                              {device.confidence > 0 && (
+                                <span className={`ml-2 text-xs px-1.5 py-0.5 rounded ${
+                                  device.confidence >= 80 ? 'bg-green-100 text-green-700' :
+                                  device.confidence >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-gray-100 text-gray-600'
+                                }`}>
+                                  {device.confidence}%
+                                </span>
+                              )}
+                            </div>
                             <div className="text-xs text-gray-500">
-                              {device.ip}:{device.recommendedPort} • {device.type}
+                              {device.ip}:{device.recommendedPort || 9100} • {device.type}
                             </div>
-                            <div className="text-xs text-gray-400">
-                              Portit: {device.ports.join(', ')}
-                            </div>
+                            {device.description && (
+                              <div className="text-xs text-gray-400">
+                                {device.description}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <Button size="sm" variant="outline">Valitse</Button>
                       </div>
                     ))}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowDeviceList(false)}
-                    className="mt-2 w-full"
-                  >
-                    Sulje lista
-                  </Button>
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowDeviceList(false)}
+                      className="flex-1"
+                    >
+                      Sulje lista
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleNetworkScan}
+                      disabled={isScanning}
+                      className="flex-1"
+                    >
+                      {isScanning ? 'Skannataan...' : 'Skannaa uudelleen'}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

@@ -5,6 +5,8 @@ export interface PrinterSettings {
   ipAddress: string;
   port: number;
   name: string;
+  characterSet?: string;
+  codePage?: number;
 }
 
 // Network printer integration using ESC/POS commands
@@ -44,66 +46,124 @@ export class NetworkPrinter {
   }
 
   private formatReceipt(order: Order): string {
-    // ESC/POS formatting commands
+    // ESC/POS formatting commands with enhanced support
     const ESC = '\x1B';
     const GS = '\x1D';
+    const LF = '\x0A';
+    const FF = '\x0C';
     
-    // Initialize printer
-    let receipt = `${ESC}@`; // Initialize
+    // Initialize printer and set character set
+    let receipt = `${ESC}@`; // Initialize printer
+    receipt += `${ESC}t\x12`; // Set character code table (CP850)
     receipt += `${ESC}a\x01`; // Center align
     
-    // Header
-    receipt += `${ESC}!\x18`; // Large text
-    receipt += 'RAVINTOLA TIRVA\n';
+    // Header with enhanced formatting
+    receipt += `${ESC}!\x38`; // Double width and height
+    receipt += 'RAVINTOLA TIRVA' + LF;
     receipt += `${ESC}!\x00`; // Normal text
-    receipt += 'Keittiötilaus\n';
-    receipt += '================================\n';
+    receipt += `${ESC}!\x08`; // Emphasized
+    receipt += 'Keittiötilaus' + LF;
+    receipt += `${ESC}!\x00`; // Normal text
+    receipt += '================================' + LF;
     
-    // Order details
+    // Order details with better formatting
     receipt += `${ESC}a\x00`; // Left align
-    receipt += `Tilaus: #${order.woocommerceId}\n`;
-    receipt += `Asiakas: ${order.customerName}\n`;
-    receipt += `Puh: ${order.customerPhone}\n`;
-    receipt += `Tyyppi: ${order.type === 'delivery' ? 'Kotiinkuljetus' : 'Nouto'}\n`;
+    receipt += `${ESC}!\x01`; // Small text
+    receipt += `Tilaus: #${order.woocommerceId}` + LF;
+    receipt += `Asiakas: ${order.customerName}` + LF;
+    if (order.customerPhone && order.customerPhone !== 'Ei numeroa') {
+      receipt += `Puh: ${order.customerPhone}` + LF;
+    }
+    receipt += `Tyyppi: ${order.type === 'delivery' ? 'Kotiinkuljetus' : 'Nouto'}` + LF;
     
-    if (order.type === 'delivery' && order.shippingAddress) {
-      receipt += `Osoite: ${order.shippingAddress}\n`;
-    } else if (order.type === 'delivery' && order.billingAddress) {
-      receipt += `Osoite: ${order.billingAddress}\n`;
+    // Address information for deliveries
+    if (order.type === 'delivery') {
+      if (order.addressStreet) {
+        receipt += `Katu: ${order.addressStreet}` + LF;
+      }
+      if (order.addressCity) {
+        receipt += `Kaupunki: ${order.addressCity}` + LF;
+      }
+      if (order.addressInstructions) {
+        receipt += `Ohjeet: ${order.addressInstructions}` + LF;
+      }
     }
     
-    receipt += `Aika: ${new Date().toLocaleString('fi-FI')}\n`;
-    receipt += '--------------------------------\n';
+    receipt += `Aika: ${new Date().toLocaleString('fi-FI')}` + LF;
+    receipt += `${ESC}!\x00`; // Normal text
+    receipt += '--------------------------------' + LF;
     
-    // Items
-    receipt += 'TUOTTEET:\n';
+    // Items section with better formatting
+    receipt += `${ESC}!\x08`; // Emphasized
+    receipt += 'TUOTTEET:' + LF;
+    receipt += `${ESC}!\x00`; // Normal text
+    
     const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
     items.forEach((item: any) => {
-      receipt += `${item.quantity}x ${item.name}\n`;
+      // Item name and quantity
+      receipt += `${item.quantity}x ${item.name}` + LF;
+      
+      // Variations/modifications
       if (item.variations && item.variations.length > 0) {
         item.variations.forEach((variation: string) => {
-          receipt += `  + ${variation}\n`;
+          receipt += `  + ${variation}` + LF;
         });
       }
-      receipt += `  ${item.price}\n`;
+      
+      // Meta data (from WooCommerce)
+      if (item.meta && item.meta.length > 0) {
+        item.meta.forEach((meta: any) => {
+          if (meta.key && meta.value) {
+            receipt += `  ${meta.key}: ${meta.value}` + LF;
+          }
+        });
+      }
+      
+      // Price with right alignment
+      const priceStr = item.price || '';
+      const spaces = ' '.repeat(Math.max(0, 32 - priceStr.length));
+      receipt += spaces + priceStr + LF;
     });
     
-    receipt += '--------------------------------\n';
+    receipt += '--------------------------------' + LF;
+    
+    // Total with large text
     receipt += `${ESC}!\x18`; // Large text
-    receipt += `YHTEENSÄ: ${order.total}\n`;
+    receipt += `YHTEENSÄ: ${order.total || order.subtotal}` + LF;
     receipt += `${ESC}!\x00`; // Normal text
     
-    if (order.notes) {
-      receipt += '--------------------------------\n';
-      receipt += 'ERITYISOHJEET:\n';
-      receipt += `${order.notes}\n`;
+    // Additional fees
+    if (order.deliveryFee && order.deliveryFee !== '0 €') {
+      receipt += `Toimitusmaksu: ${order.deliveryFee}` + LF;
     }
     
-    receipt += '================================\n';
+    // Special instructions
+    if (order.notes) {
+      receipt += '--------------------------------' + LF;
+      receipt += `${ESC}!\x08`; // Emphasized
+      receipt += 'ERITYISOHJEET:' + LF;
+      receipt += `${ESC}!\x00`; // Normal text
+      receipt += `${order.notes}` + LF;
+    }
+    
+    // Timeline information
+    receipt += '================================' + LF;
     receipt += `${ESC}a\x01`; // Center align
-    receipt += 'Kiitos tilauksesta!\n';
-    receipt += '\n\n\n';
-    receipt += `${GS}V\x41\x03`; // Cut paper
+    receipt += `Vastaanotettu: ${new Date(order.receivedAt).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' })}` + LF;
+    if (order.estimatedTime) {
+      receipt += `Arvioitu valmis: ${order.estimatedTime}` + LF;
+    }
+    
+    // Footer
+    receipt += '================================' + LF;
+    receipt += `${ESC}!\x08`; // Emphasized
+    receipt += 'Kiitos tilauksesta!' + LF;
+    receipt += `${ESC}!\x00`; // Normal text
+    receipt += 'www.ravintolatirva.fi' + LF;
+    receipt += LF + LF + LF; // Extra spacing
+    
+    // Cut paper
+    receipt += `${GS}V\x41\x03`; // Partial cut
     
     return receipt;
   }

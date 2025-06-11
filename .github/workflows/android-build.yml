@@ -1,0 +1,130 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, development ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+        - debug
+        - release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build web assets
+      run: npm run build
+      
+    - name: Setup Capacitor
+      run: |
+        npm install -g @capacitor/cli
+        npx cap sync android
+        
+    - name: Grant execute permission for gradlew
+      run: chmod +x android/gradlew
+      
+    - name: Build Debug APK
+      if: ${{ github.event.inputs.release_type == 'debug' || github.event.inputs.release_type == '' }}
+      run: |
+        cd android
+        ./gradlew assembleDebug
+        
+    - name: Build Release APK
+      if: ${{ github.event.inputs.release_type == 'release' }}
+      env:
+        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+      run: |
+        cd android
+        # Decode base64 keystore and save to file
+        echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
+        ./gradlew assembleRelease
+        
+    - name: Upload Debug APK
+      if: ${{ github.event.inputs.release_type == 'debug' || github.event.inputs.release_type == '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ravintola-tirva-debug-${{ github.run_number }}
+        path: android/app/build/outputs/apk/debug/*.apk
+        retention-days: 30
+        
+    - name: Upload Release APK
+      if: ${{ github.event.inputs.release_type == 'release' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ravintola-tirva-release-${{ github.run_number }}
+        path: android/app/build/outputs/apk/release/*.apk
+        retention-days: 90
+        
+    - name: Create Release
+      if: ${{ github.event.inputs.release_type == 'release' && github.ref == 'refs/heads/main' }}
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Ravintola Tirva v${{ github.run_number }}
+        body: |
+          ## Ravintola Tirva Kitchen App Release
+          
+          ### Features
+          - 🖨️ Network printer support with ESC/POS commands
+          - 🛒 WooCommerce integration with webhooks
+          - 📱 Android notifications with accept/refuse actions
+          - 🔊 Audio alerts for new orders
+          - 📄 Automatic receipt printing
+          
+          ### Changes in this release
+          - Enhanced printer connection and testing
+          - Improved WooCommerce webhook processing
+          - Better error handling and user feedback
+          - Android-optimized notifications and background operation
+          
+          ### Installation
+          Download the APK below and install on your Android device.
+          Make sure to enable "Install from unknown sources" in your device settings.
+          
+        draft: false
+        prerelease: false
+        
+    - name: Upload Release Asset
+      if: ${{ github.event.inputs.release_type == 'release' && github.ref == 'refs/heads/main' }}
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: android/app/build/outputs/apk/release/app-release.apk
+        asset_name: ravintola-tirva-v${{ github.run_number }}.apk
+        asset_content_type: application/vnd.android.package-archive

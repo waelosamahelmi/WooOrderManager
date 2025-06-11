@@ -7,12 +7,15 @@ const config: CapacitorConfig = {
   bundledWebRuntime: false,
   server: {
     androidScheme: 'https',
-    hostname: 'localhost'
+    hostname: 'localhost',
+    cleartext: true
   },
   android: {
     allowMixedContent: true,
     captureInput: true,
-    webContentsDebuggingEnabled: true
+    webContentsDebuggingEnabled: true,
+    loggingBehavior: 'debug',
+    backgroundColor: '#2563eb'
   },
   plugins: {
     PushNotifications: {
@@ -29,7 +32,12 @@ const config: CapacitorConfig = {
       backgroundColor: "#2563eb",
       androidSplashResourceName: "splash",
       androidScaleType: "CENTER_CROP",
-      showSpinner: false
+      showSpinner: false,
+      spinnerStyle: "large",
+      spinnerColor: "#ffffff"
+    },
+    CapacitorHttp: {
+      enabled: true
     }
   }
 };
