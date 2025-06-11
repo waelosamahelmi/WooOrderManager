@@ -156,6 +156,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Printer test endpoint
+  app.post("/api/printer/test", async (req, res) => {
+    try {
+      const { ip, port } = req.body;
+      
+      if (!ip || !port) {
+        return res.status(400).json({ success: false, message: "IP address and port are required" });
+      }
+
+      // Test TCP connection to printer
+      const net = require('net');
+      const socket = new net.Socket();
+      
+      const connectionPromise = new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          socket.destroy();
+          reject(new Error('Connection timeout'));
+        }, 5000); // 5 second timeout
+
+        socket.connect(parseInt(port), ip, () => {
+          clearTimeout(timeout);
+          socket.destroy();
+          resolve(true);
+        });
+
+        socket.on('error', (err: any) => {
+          clearTimeout(timeout);
+          socket.destroy();
+          reject(err);
+        });
+      });
+
+      await connectionPromise;
+      res.json({ success: true, message: "Printer connection successful" });
+    } catch (error: any) {
+      res.json({ 
+        success: false, 
+        message: `Cannot connect to printer: ${error?.message || 'Unknown error'}` 
+      });
+    }
+  });
+
   // Reset settings endpoint for fixing persistence issues
   app.post("/api/settings/reset", async (req, res) => {
     try {

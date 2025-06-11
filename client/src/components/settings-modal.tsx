@@ -96,20 +96,36 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
   const testPrinterMutation = useMutation({
     mutationFn: async () => {
-      // Simulate printer test
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return { success: true };
-    },
-    onSuccess: () => {
-      toast({
-        title: "Tulostin toimii!",
-        description: "Yhteys tulostimeen on toimiva.",
+      const response = await fetch('/api/printer/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ip: settings.printerIp,
+          port: settings.printerPort
+        })
       });
+      return await response.json();
     },
-    onError: () => {
+    onSuccess: (data: any) => {
+      if (data.success) {
+        toast({
+          title: "Tulostin toimii!",
+          description: "Yhteys tulostimeen onnistui.",
+        });
+      } else {
+        toast({
+          title: "Tulostinvirhe",
+          description: data.message || "Tulostimeen ei saada yhteyttä",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error) => {
       toast({
         title: "Tulostinvirhe",
-        description: "Tulostimeen ei saada yhteyttä",
+        description: "Yhteyden testaus epäonnistui",
         variant: "destructive",
       });
     }
