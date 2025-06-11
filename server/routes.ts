@@ -198,6 +198,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Network device discovery endpoint
+  app.post("/api/printer/discover", async (req, res) => {
+    try {
+      const net = require('net');
+      const os = require('os');
+      
+      // Get local network interfaces
+      const interfaces = os.networkInterfaces();
+      const localNetworks: string[] = [];
+      
+      // Extract network ranges from local interfaces
+      Object.values(interfaces).forEach((iface: any) => {
+        if (iface) {
+          iface.forEach((config: any) => {
+            if (config.family === 'IPv4' && !config.internal && config.address) {
+              // Convert IP to network range (e.g., 192.168.1.0/24)
+              const parts = config.address.split('.');
+              const networkBase = `${parts[0]}.${parts[1]}.${parts[2]}`;
+              localNetworks.push(networkBase);
+            }
+          });
+        }
+      });
+
+      const commonPrinterPorts = [9100, 515, 631, 80, 443];
+      const discoveredDevices: any[] = [];
+      const maxConcurrent = 20;
+      
+      // Scan common network ranges if no local networks found
+      if (localNetworks.length === 0) {
+        localNetworks.push('192.168.1', '192.168.0', '10.0.0');
+      }
+
+      const testConnection = (ip: string, port: number): Promise<{ ip: string, port: number, success: boolean }> => {
+        return new Promise((resolve) => {
+          const socket = new net.Socket();
+          const timeout = setTimeout(() => {
+            socket.destroy();
+            resolve({ ip, port, success: false });
+          }, 2000); // 2 second timeout for discovery
+
+          socket.connect(port, ip, () => {
+            clearTimeout(timeout);
+            socket.destroy();
+            resolve({ ip, port, success: true });
+          });
+
+          socket.on('error', () => {
+            clearTimeout(timeout);
+            socket.destroy();
+            resolve({ ip, port, success: false });
+          });
+        });
+      };
+
+      // Create scan tasks
+      const scanTasks: Promise<any>[] = [];
+      
+      for (const networkBase of localNetworks) {
+        for (let i = 1; i <= 254; i++) {
+          const ip = `${networkBase}.${i}`;
+          for (const port of commonPrinterPorts) {
+            scanTasks.push(testConnection(ip, port));
+          }
+        }
+      }
+
+      // Execute scans in batches to avoid overwhelming the network
+      const results: any[] = [];
+      for (let i = 0; i < scanTasks.length; i += maxConcurrent) {
+        const batch = scanTasks.slice(i, i + maxConcurrent);
+        const batchResults = await Promise.all(batch);
+        results.push(...batchResults);
+      }
+
+      // Filter successful connections and group by IP
+      const deviceMap = new Map();
+      results.forEach(result => {
+        if (result.success) {
+          if (!deviceMap.has(result.ip)) {
+            deviceMap.set(result.ip, {
+              ip: result.ip,
+              ports: [],
+              type: 'Unknown Device',
+              name: `Device at ${result.ip}`
+            });
+          }
+          deviceMap.get(result.ip).ports.push(result.port);
+        }
+      });
+
+      // Enhance device information based on open ports
+      deviceMap.forEach((device, ip) => {
+        if (device.ports.includes(9100)) {
+          device.type = 'Network Printer';
+          device.name = `Printer at ${ip}`;
+          device.recommendedPort = 9100;
+        } else if (device.ports.includes(515)) {
+          device.type = 'LPD Printer';
+          device.name = `LPD Printer at ${ip}`;
+          device.recommendedPort = 515;
+        } else if (device.ports.includes(631)) {
+          device.type = 'IPP Printer';
+          device.name = `IPP Printer at ${ip}`;
+          device.recommendedPort = 631;
+        } else if (device.ports.includes(80) || device.ports.includes(443)) {
+          device.type = 'Web Device';
+          device.name = `Web Device at ${ip}`;
+          device.recommendedPort = device.ports.includes(9100) ? 9100 : device.ports[0];
+        }
+        discoveredDevices.push(device);
+      });
+
+      // Sort by printer likelihood (printers first)
+      discoveredDevices.sort((a, b) => {
+        const printerTypes = ['Network Printer', 'LPD Printer', 'IPP Printer'];
+        const aIsPrinter = printerTypes.includes(a.type);
+        const bIsPrinter = printerTypes.includes(b.type);
+        
+        if (aIsPrinter && !bIsPrinter) return -1;
+        if (!aIsPrinter && bIsPrinter) return 1;
+        return 0;
+      });
+
+      res.json({ 
+        success: true, 
+        devices: discoveredDevices,
+        scannedNetworks: localNetworks,
+        totalScanned: scanTasks.length
+      });
+    } catch (error: any) {
+      res.json({ 
+        success: false, 
+        message: `Network discovery failed: ${error?.message || 'Unknown error'}`,
+        devices: []
+      });
+    }
+  });
+
   // Reset settings endpoint for fixing persistence issues
   app.post("/api/settings/reset", async (req, res) => {
     try {

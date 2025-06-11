@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Printer } from "lucide-react";
+import { Printer, Search, Wifi } from "lucide-react";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -32,6 +32,9 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
   const [isTestingWooCommerce, setIsTestingWooCommerce] = useState(false);
   const [wooCommerceStatus, setWooCommerceStatus] = useState<'unknown' | 'connected' | 'error'>('unknown');
+  const [isScanning, setIsScanning] = useState(false);
+  const [discoveredDevices, setDiscoveredDevices] = useState<any[]>([]);
+  const [showDeviceList, setShowDeviceList] = useState(false);
 
   const { data: settingsData } = useQuery({
     queryKey: ['/api/settings'],
@@ -133,6 +136,58 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
 
   const handleSave = () => {
     saveSettingsMutation.mutate(settings);
+  };
+
+  const handleNetworkScan = async () => {
+    setIsScanning(true);
+    setDiscoveredDevices([]);
+    
+    try {
+      const response = await fetch('/api/printer/discover', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      const data = await response.json();
+      
+      if (data.success && data.devices) {
+        setDiscoveredDevices(data.devices);
+        setShowDeviceList(true);
+        toast({
+          title: "Verkkoskannaus valmis",
+          description: `Löytyi ${data.devices.length} laitetta`,
+        });
+      } else {
+        toast({
+          title: "Verkkoskannaus epäonnistui",
+          description: data.message || "Ei löytynyt laitteita",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Verkkoskannaus virhe",
+        description: "Skannaus epäonnistui",
+        variant: "destructive",
+      });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const selectDevice = (device: any) => {
+    setSettings(prev => ({
+      ...prev,
+      printerIp: device.ip,
+      printerPort: device.recommendedPort?.toString() || '9100',
+      printerName: device.name
+    }));
+    setShowDeviceList(false);
+    toast({
+      title: "Laite valittu",
+      description: `${device.name} (${device.ip}:${device.recommendedPort})`,
+    });
   };
 
   const handleTestPrinter = () => {
@@ -245,14 +300,63 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
                 />
               </div>
               
-              <Button
-                onClick={handleTestPrinter}
-                disabled={testPrinterMutation.isPending}
-                className="w-full"
-              >
-                <Printer className="w-4 h-4 mr-2" />
-                {testPrinterMutation.isPending ? 'Testataan...' : 'Testaa tulostin'}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleNetworkScan}
+                  disabled={isScanning}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  {isScanning ? 'Skannataan...' : 'Skannaa verkko'}
+                </Button>
+                <Button
+                  onClick={handleTestPrinter}
+                  disabled={testPrinterMutation.isPending}
+                  className="flex-1"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  {testPrinterMutation.isPending ? 'Testataan...' : 'Testaa tulostin'}
+                </Button>
+              </div>
+
+              {/* Device Discovery Results */}
+              {showDeviceList && discoveredDevices.length > 0 && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Löydetyt laitteet:</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {discoveredDevices.map((device, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-white rounded border hover:bg-gray-50 cursor-pointer"
+                        onClick={() => selectDevice(device)}
+                      >
+                        <div className="flex items-center">
+                          <Wifi className="w-4 h-4 text-green-600 mr-3" />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{device.name}</div>
+                            <div className="text-xs text-gray-500">
+                              {device.ip}:{device.recommendedPort} • {device.type}
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Portit: {device.ports.join(', ')}
+                            </div>
+                          </div>
+                        </div>
+                        <Button size="sm" variant="outline">Valitse</Button>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDeviceList(false)}
+                    className="mt-2 w-full"
+                  >
+                    Sulje lista
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
