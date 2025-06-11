@@ -48,7 +48,6 @@ jobs:
       run: |
         echo "Deploying to production environment..."
         # Add your production deployment commands here
-        
     - name: Notify deployment success
       if: success()
       run: |
@@ -73,17 +72,18 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-          - name: Setup Android SDK
+        
+    - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
-        cmdline-tools-version: 14.0
+        cmdline-tools-version: 11076708
         accept-android-sdk-licenses: true
         log-accepted-android-sdk-licenses: true
         packages: |
           tools
           platform-tools
-          build-tools;35.0.0
-          platforms;android-35
+          build-tools;34.0.0
+          platforms;android-34
       
     - name: Install dependencies
       run: npm ci
