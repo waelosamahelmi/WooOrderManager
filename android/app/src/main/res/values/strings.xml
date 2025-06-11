@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ravintola Tirva</string>
+    <string name="title_activity_main">Ravintola Tirva</string>
+    <string name="package_name">com.ravintola.tirva.app</string>
+    <string name="custom_url_scheme">com.ravintola.tirva.app</string>
+</resources>
