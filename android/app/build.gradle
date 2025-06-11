@@ -3,6 +3,12 @@ apply plugin: 'com.android.application'
 android {
     namespace "com.ravintola.tirva.app"
     compileSdk rootProject.ext.compileSdkVersion
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    
     defaultConfig {
         applicationId "com.ravintola.tirva.app"
         minSdkVersion rootProject.ext.minSdkVersion
