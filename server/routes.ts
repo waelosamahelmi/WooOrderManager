@@ -455,6 +455,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const systemStatusUrl = `${shopUrl}/wp-json/wc/v3/system_status`;
       
       try {
+        // Create abort controller for timeout
+        const controller1 = new AbortController();
+        const timeoutId1 = setTimeout(() => controller1.abort(), 10000); // 10 second timeout
+        
         const systemResponse = await fetch(systemStatusUrl, {
           method: 'GET',
           headers: {
@@ -462,8 +466,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             'Content-Type': 'application/json',
             'User-Agent': 'Ravintola-Tirva-Kitchen/1.0'
           },
-          timeout: 10000 // 10 second timeout
+          signal: controller1.signal
         });
+        clearTimeout(timeoutId1);
 
         if (systemResponse.ok) {
           const systemData = await systemResponse.json();
@@ -471,6 +476,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Also test orders endpoint to ensure full access
           const ordersTestUrl = `${shopUrl}/wp-json/wc/v3/orders?per_page=1&status=any`;
+          const controller2 = new AbortController();
+          const timeoutId2 = setTimeout(() => controller2.abort(), 10000);
+          
           const ordersResponse = await fetch(ordersTestUrl, {
             method: 'GET',
             headers: {
@@ -478,8 +486,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'Content-Type': 'application/json',
               'User-Agent': 'Ravintola-Tirva-Kitchen/1.0'
             },
-            timeout: 10000
+            signal: controller2.signal
           });
+          clearTimeout(timeoutId2);
 
           if (ordersResponse.ok) {
             const ordersData = await ordersResponse.json();
@@ -760,7 +769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Print operation failed:', printError);
         res.status(500).json({ 
           success: false, 
-          message: `Print failed: ${printError.message}`,
+          message: `Print failed: ${printError instanceof Error ? printError.message : String(printError)}`,
           details: `Failed to print to ${printerSettings.ipAddress}:${printerSettings.port}`
         });
       }
@@ -769,7 +778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "Print operation failed",
-        details: error.message
+        details: error instanceof Error ? error.message : String(error)
       });
     }
   });

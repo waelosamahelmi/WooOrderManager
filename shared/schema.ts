@@ -13,11 +13,14 @@ export const orders = pgTable("orders", {
   total: text("total").notNull(),
   subtotal: text("subtotal").notNull(),
   deliveryFee: text("delivery_fee"),
+  taxAmount: text("tax_amount"),
+  paymentMethod: text("payment_method"),
   items: text("items").notNull(), // JSON string
   notes: text("notes"),
   addressStreet: text("address_street"),
   addressCity: text("address_city"),
   addressInstructions: text("address_instructions"),
+  deliveryAddress: text("delivery_address"), // Full formatted address
   receivedAt: timestamp("received_at").defaultNow().notNull(),
   estimatedTime: text("estimated_time"),
   printedAt: timestamp("printed_at"),
