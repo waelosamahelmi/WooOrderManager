@@ -1,6 +1,10 @@
 @echo off
 echo Building WooOrderManager APK...
 echo.
+echo 💡 TIP: For easier building without local Android Studio setup,
+echo    consider using cloud platforms like GitHub Actions, Gitpod, or Replit!
+echo    See QUICK_CLOUD_BUILD.md for details.
+echo.
 
 echo Step 1: Building web application...
 call npm run build
