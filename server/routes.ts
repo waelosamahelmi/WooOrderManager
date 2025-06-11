@@ -212,23 +212,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (iface) {
           iface.forEach((config: any) => {
             if (config.family === 'IPv4' && !config.internal && config.address) {
-              // Convert IP to network range (e.g., 192.168.1.0/24)
-              const parts = config.address.split('.');
-              const networkBase = `${parts[0]}.${parts[1]}.${parts[2]}`;
-              localNetworks.push(networkBase);
+              const ip = config.address;
+              // Skip link-local addresses (169.254.x.x) and other non-local ranges
+              if (ip.startsWith('169.254.') || ip.startsWith('127.') || 
+                  ip.startsWith('224.') || ip.startsWith('240.')) {
+                return;
+              }
+              
+              // Only include private network ranges
+              if (ip.startsWith('192.168.') || ip.startsWith('10.') || 
+                  (ip.startsWith('172.') && parseInt(ip.split('.')[1]) >= 16 && parseInt(ip.split('.')[1]) <= 31)) {
+                const parts = ip.split('.');
+                const networkBase = `${parts[0]}.${parts[1]}.${parts[2]}`;
+                if (!localNetworks.includes(networkBase)) {
+                  localNetworks.push(networkBase);
+                }
+              }
             }
           });
         }
       });
 
-      const commonPrinterPorts = [9100, 515, 631, 80, 443];
+      const commonPrinterPorts = [9100, 515, 631];
       const discoveredDevices: any[] = [];
-      const maxConcurrent = 20;
+      const maxConcurrent = 50;
       
       // Scan common network ranges if no local networks found
       if (localNetworks.length === 0) {
-        localNetworks.push('192.168.1', '192.168.0', '10.0.0');
+        localNetworks.push('192.168.1', '192.168.0', '10.0.1');
       }
+
+      console.log('Scanning networks:', localNetworks);
 
       const testConnection = (ip: string, port: number): Promise<{ ip: string, port: number, success: boolean }> => {
         return new Promise((resolve) => {
@@ -236,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const timeout = setTimeout(() => {
             socket.destroy();
             resolve({ ip, port, success: false });
-          }, 2000); // 2 second timeout for discovery
+          }, 1000); // 1 second timeout for discovery
 
           socket.connect(port, ip, () => {
             clearTimeout(timeout);
