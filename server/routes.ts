@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from "ws";
+import * as net from "net";
+import * as os from "os";
 import { storage } from "./storage";
 import { insertOrderSchema, insertSettingSchema } from "@shared/schema";
 import { z } from "zod";
@@ -166,7 +168,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Test TCP connection to printer
-      const net = require('net');
       const socket = new net.Socket();
       
       const connectionPromise = new Promise((resolve, reject) => {
@@ -201,8 +202,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Network device discovery endpoint
   app.post("/api/printer/discover", async (req, res) => {
     try {
-      const net = require('net');
-      const os = require('os');
       
       // Get local network interfaces
       const interfaces = os.networkInterfaces();
