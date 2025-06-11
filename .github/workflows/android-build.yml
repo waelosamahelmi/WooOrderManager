@@ -29,7 +29,6 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        
     - name: Setup Java JDK
       uses: actions/setup-java@v4
       with:
@@ -45,7 +44,9 @@ jobs:
           android/.gradle
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
-          ${{ runner.os }}-gradle-    - name: Setup Android SDK
+          ${{ runner.os }}-gradle-
+          
+    - name: Setup Android SDK
       run: |
         # Install Android SDK command line tools
         sudo apt-get update
