@@ -33,11 +33,33 @@ jobs:
     - name: Setup Java JDK
       uses: actions/setup-java@v4
       with:
-        java-version: '11'
+        java-version: '17'
         distribution: 'temurin'
+        
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          android/.gradle
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
+      with:
+        cmdline-tools-version: 14.0
+        accept-android-sdk-licenses: true
+        log-accepted-android-sdk-licenses: true
+        packages: |
+          tools
+          platform-tools
+          build-tools;35.0.0
+          platforms;android-35
+          cmake;3.22.1
+          ndk;25.1.8937393
       
     - name: Install dependencies
       run: npm ci
@@ -50,6 +72,17 @@ jobs:
         npm install -g @capacitor/cli
         npx cap sync android
         
+    - name: Verify Android Environment
+      run: |
+        echo "Java version:"
+        java -version
+        echo "Android SDK path:"
+        echo $ANDROID_SDK_ROOT
+        echo "Available build tools:"
+        ls -la $ANDROID_SDK_ROOT/build-tools/
+        echo "Available platforms:"
+        ls -la $ANDROID_SDK_ROOT/platforms/
+        
     - name: Grant execute permission for gradlew
       run: chmod +x android/gradlew
       
@@ -57,7 +90,7 @@ jobs:
       if: ${{ github.event.inputs.release_type == 'debug' || github.event.inputs.release_type == '' }}
       run: |
         cd android
-        ./gradlew assembleDebug
+        ./gradlew assembleDebug --stacktrace
         
     - name: Build Release APK
       if: ${{ github.event.inputs.release_type == 'release' }}
@@ -69,7 +102,7 @@ jobs:
         cd android
         # Decode base64 keystore and save to file
         echo "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
-        ./gradlew assembleRelease
+        ./gradlew assembleRelease --stacktrace
         
     - name: Upload Debug APK
       if: ${{ github.event.inputs.release_type == 'debug' || github.event.inputs.release_type == '' }}
@@ -89,12 +122,11 @@ jobs:
         
     - name: Create Release
       if: ${{ github.event.inputs.release_type == 'release' && github.ref == 'refs/heads/main' }}
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      id: create_release
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ github.run_number }}
-        release_name: Ravintola Tirva v${{ github.run_number }}
+        name: Ravintola Tirva v${{ github.run_number }}
         body: |
           ## Ravintola Tirva Kitchen App Release
           
@@ -117,14 +149,6 @@ jobs:
           
         draft: false
         prerelease: false
-        
-    - name: Upload Release Asset
-      if: ${{ github.event.inputs.release_type == 'release' && github.ref == 'refs/heads/main' }}
-      uses: actions/upload-release-asset@v1
+        files: android/app/build/outputs/apk/release/*.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: android/app/build/outputs/apk/release/app-release.apk
-        asset_name: ravintola-tirva-v${{ github.run_number }}.apk
-        asset_content_type: application/vnd.android.package-archive
