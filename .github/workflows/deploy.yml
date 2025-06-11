@@ -66,13 +66,13 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        
     - name: Setup Java JDK
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-          - name: Setup Android SDK
+        
+    - name: Setup Android SDK
       run: |
         # Install Android SDK command line tools
         sudo apt-get update
